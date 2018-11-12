@@ -9,7 +9,7 @@ import com.beacheslav.market.model.*
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.list_item_offer.view.*
 
-class MarketAdapter(var offerList : ArrayList<Offer>?, var bannerList : ArrayList<Banner>?) : RecyclerView.Adapter<MarketAdapter.ViewHolder>(){
+class MarketAdapter(var adapterList: ArrayList<RowType>?) : RecyclerView.Adapter<MarketAdapter.ViewHolder>(){
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MarketAdapter.ViewHolder {
         val v = LayoutInflater.from(parent.context).inflate(R.layout.list_item_offer, parent, false)
@@ -17,12 +17,14 @@ class MarketAdapter(var offerList : ArrayList<Offer>?, var bannerList : ArrayLis
     }
 
     override fun onBindViewHolder(holder: MarketAdapter.ViewHolder, position: Int) {
-        holder.bindItems(offerList!![position])
+        if (adapterList!![position] is Offer){
+            holder.bindItems(adapterList!![position] as Offer)
+        }
     }
 
     override fun getItemCount(): Int {
-        if (offerList != null){
-            return offerList!!.size
+        if (adapterList != null){
+            return adapterList!!.size
         } else {
             return 0
         }

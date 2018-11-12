@@ -15,15 +15,18 @@ class MainActivity : AppCompatActivity() {
 
     var mOffers : ArrayList<Offer>? = null
     var mBanners : ArrayList<Banner>? = null
-    var mAdapterList : List<RowType>? = null
+    var mAdapterList : ArrayList<RowType>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         recyclerView.layoutManager = LinearLayoutManager(this, LinearLayout.VERTICAL, false)
-        val adapter = MarketAdapter(mOffers, mBanners)
+        val adapter = MarketAdapter(mAdapterList)
         recyclerView.adapter = adapter
+
+        //        val snapHalper : SnapHelper = LinearSnapHelper()
+        //        snapHalper.attachToRecyclerView(recyclerView)
 
         val apiService = ApiMarket.create()
         apiService.searchOffers().enqueue(object : Callback<List<Offer>>{
@@ -34,8 +37,7 @@ class MainActivity : AppCompatActivity() {
             override fun onResponse(call: Call<List<Offer>>?, response: Response<List<Offer>>?) {
                 if (response != null) {
                     mOffers = response.body() as ArrayList<Offer>?
-                    adapter.offerList = mOffers
-                    sortHolderType(mOffers, mBanners)
+                    adapter.adapterList = sortHolderType(mOffers, mBanners)
                     adapter.notifyDataSetChanged()
                 }
             }
@@ -58,31 +60,26 @@ class MainActivity : AppCompatActivity() {
 //        })
     }
 
-    fun sortHolderType(offers: ArrayList<Offer>?, banners: ArrayList<Banner>?): List<RowType>{
-        var list: ArrayList<RowType> = ArrayList()
-        list.add(0, TopSliderType(banners!!))                                   // в первом элементе всегда список баннеров
+    fun sortHolderType(offers: ArrayList<Offer>?, banners: ArrayList<Banner>?): ArrayList<RowType>{              //FIXME: offers==null
+        var list: ArrayList<RowType> = ArrayList()                                    // лист, возвращаемый методом
+        var secondList: ArrayList<Offer> = offers!!                                   // взпомогательный лист для сортировки
+
+        if(banners != null) {
+            list.add(0,TopSliderType(banners))                                  // в первом элементе всегда список баннеров
+        }else {
+            list.add(0,TopSliderType(ArrayList<Banner>()))
+        }
         list.add(1, CategoryType(offers!![0].groupName))                        // во втором элементе всегда объект категории предложений
-        list.add(2, offers[0])                                                  // в третьем элементе первый элемент списка предложений
-        var currentCategory : CategoryType = list[1] as CategoryType                  // переменная, по которой сортируем все предложения по данной категории
-        offers.removeAt(0)
-        var index : Int = 0
-
-        while (banners.size != 0){
-        //пробегаемся по всем элементам и записываем в список все элементы текущей категории
-        for (offer in offers){
-            if (offer.groupName.equals(currentCategory.category)){
-                list.add(offer)
-                offers.removeAt(index)
-                index --                                                              //так как коллекция уменьшилась, уменьшаем индекс, чтобы не пропустить элемент
+        var currentCategory : String = offers[0].groupName                            // переменная, по которой сортируем все предложения по текущей категории
+        while (true){
+            val pair : Pair<List<Offer>, List<Offer>> = secondList.partition { it.groupName.equals(currentCategory)}
+            secondList = pair.second as ArrayList<Offer>                              // фильтруем лист, новые данные добавляем в возвращаемый лист
+            list.addAll(pair.first)                                                   // оставшиеся данные записываем во вспомогательный лист
+            if (secondList.isEmpty()){                                                // если больше данных не осталось выходим, возвращая лист
+                return list
             }
-            index ++                                                                  //увеличеваем индекс, чтобы знать, по какому индексу удалять элементы
+            list.add(CategoryType(secondList[0].groupName))                           // иначе обновляем категорию и повторяем все действия, пока вспомогательный лист не будет пуст
+            currentCategory = secondList[0].groupName
         }
-            if (list.size != 0) {
-                currentCategory = CategoryType(offers[0].groupName)                   //прошлись по всем элементам массива и обновляем категорию
-            }
-
-        index = 0
-        }
-        return list
     }
 }
